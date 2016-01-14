@@ -8,7 +8,7 @@ import java.util.Scanner;
 
 public class Main {
 
-    private static final String BASE_URL = "http://127.0.0.1:8080/";
+    private static final String BASE_URL = "http://obu.grega.xyz/";
 
     public static void main(String[] args) {
 
@@ -16,7 +16,7 @@ public class Main {
         String obuId = "";
 
         try {
-            oAuthRestClient = new OAuthRestClient(BASE_URL, "obuapp", "secret", "greg", "greg");
+            oAuthRestClient = new OAuthRestClient(BASE_URL, "obuapp", "secret", "username", "password");
 
         } catch (OAuthProblemException e) {
             e.printStackTrace();
