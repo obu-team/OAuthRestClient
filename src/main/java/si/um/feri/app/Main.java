@@ -2,7 +2,10 @@ package si.um.feri.app;
 
 import org.apache.oltu.oauth2.common.exception.OAuthProblemException;
 import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
+import si.um.feri.app.model.CarCommand;
+import si.um.feri.app.model.CommandState;
 
+import java.util.EnumSet;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
@@ -87,6 +90,17 @@ public class Main {
                         }
                         break;
                     }
+                    case 6: {
+                        EnumSet<CarCommand> carCommands = EnumSet.allOf(CarCommand.class);
+                        System.out.printf("Commands: %s \n", carCommands);
+                        EnumSet<CommandState> commandStates = EnumSet.allOf(CommandState.class);
+                        System.out.printf("States: %s \n", commandStates);
+                        break;
+                    }
+                    case 7: {
+                        System.out.println("Input notification content:");
+                        break;
+                    }
                     case 9: {
                         System.exit(0);
                         break;
@@ -107,6 +121,8 @@ public class Main {
         System.out.println("3   get OBU location");
         System.out.println("4   get OBU drive history");
         System.out.println("5   get OBU errors");
+        System.out.println("6   send command to OBU");
+        System.out.println("7   send notification to OBU");
         System.out.println("9   exit app");
     }
 }
