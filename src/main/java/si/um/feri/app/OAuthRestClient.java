@@ -1,6 +1,13 @@
 package si.um.feri.app;
 
 import com.google.gson.Gson;
+import com.sun.deploy.net.HttpResponse;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.oltu.oauth2.client.OAuthClient;
 import org.apache.oltu.oauth2.client.URLConnectionClient;
 import org.apache.oltu.oauth2.client.request.OAuthBearerClientRequest;
@@ -13,7 +20,12 @@ import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import org.apache.oltu.oauth2.common.message.types.GrantType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import si.um.feri.app.model.CarCommand;
+import si.um.feri.app.model.CommandState;
 import si.um.feri.app.model.OBUIdResponse;
+import si.um.feri.app.model.POSTCommand;
+
+import java.io.IOException;
 
 public class OAuthRestClient {
 
@@ -118,7 +130,7 @@ public class OAuthRestClient {
     public String getOBUErrors(String obuId) throws OAuthProblemException, OAuthSystemException {
         OAuthClientRequest bearerClientRequest = null;
         try {
-            bearerClientRequest = new OAuthBearerClientRequest(this.baseUrl + "/restSecure/" + obuId + "/trr/driveHistory")
+            bearerClientRequest = new OAuthBearerClientRequest(this.baseUrl + "/restSecure/" + obuId + "/trr/error")
                     .setAccessToken(this.tokenResponse.getAccessToken()).buildQueryMessage();
         } catch (OAuthSystemException e) {
             logger.warn("OAuthException - obtain refreshed token");
@@ -130,6 +142,51 @@ public class OAuthRestClient {
         if(resourceResponse.getResponseCode() == 401) {
             obtainToken();
             return getOBUErrors(obuId);
+        }
+        return resourceResponse.getBody();
+    }
+
+    public String sendNotificationToOBU(String obuId, String message) throws OAuthProblemException, OAuthSystemException, IOException {
+        CloseableHttpClient client = HttpClients.createDefault();
+        HttpPost httpPost = new HttpPost(this.baseUrl + "/restSecure/" + obuId + "/trr/notification");
+        httpPost.setHeader("Authorization", "Bearer " + tokenResponse.getAccessToken());
+        MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+        builder.addTextBody("notification", message);
+        HttpEntity multipart = builder.build();
+        httpPost.setEntity(multipart);
+
+        CloseableHttpResponse response = client.execute(httpPost);
+        client.close();
+
+        if(response.getStatusLine().getStatusCode() == 401) {
+            obtainToken();
+            return sendNotificationToOBU(obuId, message);
+        }
+
+        return response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase();
+    }
+
+    public String sendCarCommand(String obuId, CarCommand cmd, CommandState cs) throws OAuthProblemException, OAuthSystemException {
+        OAuthClientRequest bearerClientRequest = null;
+        POSTCommand postCommand = new POSTCommand();
+        postCommand.setCarCommand(cmd);
+        postCommand.setCommandState(cs);
+        try {
+            bearerClientRequest = new OAuthBearerClientRequest(this.baseUrl + "/restSecure/" + obuId + "/trr/command")
+                    .setAccessToken(this.tokenResponse.getAccessToken())
+                    .buildQueryMessage();
+        } catch (OAuthSystemException e) {
+            obtainToken();
+            e.printStackTrace();
+            return sendCarCommand(obuId, cmd, cs);
+        }
+        bearerClientRequest.addHeader(OAuth.HeaderType.CONTENT_TYPE, "application/json");
+        bearerClientRequest.setBody(gson.toJson(postCommand));
+
+        OAuthResourceResponse resourceResponse = oAuthClient.resource(bearerClientRequest, OAuth.HttpMethod.POST, OAuthResourceResponse.class);
+        if(resourceResponse.getResponseCode() == 401) {
+            obtainToken();
+            return sendCarCommand(obuId, cmd, cs);
         }
         return resourceResponse.getBody();
     }

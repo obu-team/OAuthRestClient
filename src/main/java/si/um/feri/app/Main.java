@@ -5,6 +5,7 @@ import org.apache.oltu.oauth2.common.exception.OAuthSystemException;
 import si.um.feri.app.model.CarCommand;
 import si.um.feri.app.model.CommandState;
 
+import java.io.IOException;
 import java.util.EnumSet;
 import java.util.InputMismatchException;
 import java.util.Scanner;
@@ -19,7 +20,7 @@ public class Main {
         String obuId = "";
 
         try {
-            oAuthRestClient = new OAuthRestClient(BASE_URL, "obuapp", "secret", "username", "password");
+            oAuthRestClient = new OAuthRestClient(BASE_URL, "obuapp", "secret", "greg", "greg");
 
         } catch (OAuthProblemException e) {
             e.printStackTrace();
@@ -82,7 +83,7 @@ public class Main {
                     }
                     case 5: {
                         try {
-                            System.out.printf("OBU errors: \n %s \n", oAuthRestClient.getOBUDriveHistory(obuId));
+                            System.out.printf("OBU errors: \n %s \n", oAuthRestClient.getOBUErrors(obuId));
                         } catch (OAuthProblemException e) {
                             e.printStackTrace();
                         } catch (OAuthSystemException e) {
@@ -95,10 +96,33 @@ public class Main {
                         System.out.printf("Commands: %s \n", carCommands);
                         EnumSet<CommandState> commandStates = EnumSet.allOf(CommandState.class);
                         System.out.printf("States: %s \n", commandStates);
+                        scanner = new Scanner(System.in);
+                        System.out.println("Type command:");
+                        String command = scanner.next();
+                        System.out.println("Type state:");
+                        String state = scanner.next();
+                        try {
+                            System.out.printf("Send command to OBU: \n %s \n", oAuthRestClient.sendCarCommand(obuId, CarCommand.valueOf(command), CommandState.valueOf(state)));
+                        } catch (OAuthProblemException e) {
+                            e.printStackTrace();
+                        } catch (OAuthSystemException e) {
+                            System.out.println("OBU with given id does not exist. With selection of option 2 enter OBU id again or create new OBU.");
+                        }
                         break;
                     }
                     case 7: {
                         System.out.println("Input notification content:");
+                        scanner = new Scanner(System.in);
+                        String message = scanner.next();
+                        try {
+                            System.out.printf("Send notification to OBU status: \n %s \n", oAuthRestClient.sendNotificationToOBU(obuId, message));
+                        } catch (OAuthProblemException e) {
+                            e.printStackTrace();
+                        } catch (OAuthSystemException e) {
+                            System.out.println("OBU with given id does not exist. With selection of option 2 enter OBU id again or create new OBU.");
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                         break;
                     }
                     case 9: {
